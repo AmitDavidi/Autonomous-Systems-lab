@@ -34,14 +34,15 @@ boolean motorsState = 0;
 
 
 // controll variables:
-double cntrlCMDLeft = 0.0, prevLeftMotorSpeed = 0.0;
-double cntrlCMDRight = 0.0, prevLeftMotorSpeed = 0.0;
-double W_Left = 0.0, W_Right = 0.0;
+double LeftMotorSpeed_Cntrl_CMD = 0.0, prevLeftMotorSpeed = 0.0;
+double RightMotorSpeed_Cntrl_CMD = 0.0, prevLeftMotorSpeed = 0.0;
 
-
-double errorLeft = 0.0, errorRight = 0.0, cEr_left = 0.0, cEr_right = 0.0;
 
 double integralRight = 0.0, integralLeft = 0.0;
+double prevErrorLeft = 0.0, prevErrorRight = 0.0;
+
+
+
 
 float LowPassFilter(float currentReading, float previousReading, float alpha) {
   float filteredReading = alpha * currentReading + (1 - alpha) * previousReading;
@@ -89,15 +90,15 @@ double pidControllerRight(double error, double dt, double prevError, double &int
 
 
 void P2P_CTRL(double X_Desired, double Y_Desired, double &Left_Motor, double &Right_Motor) {
-    float Vr[] = {cos(PHI), sin(PHI)};  // car direction vector
-    float Vt[] = {X_Desired-POS_X, Y_Desired-POS_Y}; // car direction vector
+    float Vr[] = {cos(theta), sin(theta)};  // car direction vector
+    float Vt[] = {X_Desired-posx, Y_Desired-posy}; // car direction vector
 
     float dir = (Vt[1]*Vr[0] - Vt[0]*Vr[1] > 0) ? 1 : -1; //cross(Vr,Vt)
     float dotVector = (Vt[0]*Vr[0] + Vt[1]*Vr[1])/(sqrt(pow(Vt[0],2) + pow(Vt[1],2))*sqrt(pow(Vr[0],2) + pow(Vr[1],2)));
-
+    double theta_t;
     // calculate the desired angle change for the target point
     if ((dir == 0) && (dotVector == -1)) {  // vectors align in reverse... singularity
-        theta_t = PI/2;
+        theta_t = 3.14/2;
     } else {
         theta_t = acos(dotVector) * dir;
     }
@@ -187,9 +188,9 @@ void loop() {
     double errorRight = RightMotorSpeed_Cntrl_CMD - RightMotorSpeed;
     
     // insert error to pidController, insert the controll signal to the motors.
-    cEr_left = pidController(errorLeft, dt_time, prevError1, integralLeft);
+    double cEr_left = pidController(errorLeft, dt_time, prevErrorLeft, integralLeft);
 
-    cEr_right = pidController(errorRight, dt_time, prevError1, integralRight); 
+    double cEr_right = pidController(errorRight, dt_time, prevErrorRight, integralRight); 
     
 
     motors.setLeftSpeed(cEr_left);
@@ -265,10 +266,11 @@ void gyroOffset(){
 
 
 
-void odometry(void){
+void odometry(double &leftMotorSpeed, double &rightMotorSpeed, double dt){
     //encoder read
     int16_t countsLeft = encoders.getCountsAndResetLeft();
     int16_t countsRight = encoders.getCountsAndResetRight();
+    
     float dx_1 = countsRight*encoder2dist;
     float dx_2 = countsLeft*encoder2dist;
     float d_theta = float(dx_1-dx_2)/WHEELS_DISTANCE;
