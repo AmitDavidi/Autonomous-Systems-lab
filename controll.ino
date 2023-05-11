@@ -35,14 +35,15 @@ boolean motorsState = 0;
 
 // controll variables:
 double LeftMotorSpeed_Cntrl_CMD = 0.0, prevLeftMotorSpeed = 0.0;
-double RightMotorSpeed_Cntrl_CMD = 0.0, prevLeftMotorSpeed = 0.0;
-
+double  leftWheelSpeed = 0.0, rightWheelSpeed = 0.0;
+double RightMotorSpeed_Cntrl_CMD = 0.0, prevRightMotorSpeed = 0.0;
+double desiredPosY = 0.0, desiredPosX = 0.0;
 
 double integralRight = 0.0, integralLeft = 0.0;
 double prevErrorLeft = 0.0, prevErrorRight = 0.0;
+double cEr_left = 0.0, cEr_right = 0.0;
 
-
-
+double error_left = 0.0, error_right = 0.0;
 
 float LowPassFilter(float currentReading, float previousReading, float alpha) {
   float filteredReading = alpha * currentReading + (1 - alpha) * previousReading;
@@ -50,13 +51,13 @@ float LowPassFilter(float currentReading, float previousReading, float alpha) {
 }
 
 
-double pidControllerLeft(double error, double dt, double prevError, double &integral) {
-  double prev_error = 0.0, Kp = 5.0, Ki = 0.1 , Kd = 0.5, outMin = -200.0 , outMax = 200.0;
+double pidControllerLeft(double error, double prevError, double &integral) {
+  double Kp = 10.0, Ki = 5.0 , Kd = 0.0, outMin = 0.0 , outMax = 250.0;
 
 
   double proportional = Kp * error;  // Calculate the proportional term
-  integral += Ki * error * dt;  // Calculate the integral term
-  double derivative = Kd * (error - prevError) / dt;  // Calculate the derivative term
+  integral += Ki * error * dt_time;  // Calculate the integral term
+  double derivative = Kd * (error - prevError) / dt_time;  // Calculate the derivative term
   double output = proportional + integral + derivative;  // Calculate the output
   
   // Limit the output to the minimum and maximum values
@@ -69,13 +70,13 @@ double pidControllerLeft(double error, double dt, double prevError, double &inte
   return output;  // Return the output
 }
 
-double pidControllerRight(double error, double dt, double prevError, double &integral) {
-  double prev_error = 0.0, Kp = 5.0, Ki = 0.1 , Kd = 0.5, outMin = -200.0 , outMax = 200.0;
+double pidControllerRight(double error, double prevError, double &integral) {
+  double Kp = 10.0, Ki = 5.0 , Kd = 0.0, outMin = 0.0 , outMax = 250.0;
 
 
   double proportional = Kp * error;  // Calculate the proportional term
-  integral += Ki * error * dt;  // Calculate the integral term
-  double derivative = Kd * (error - prevError) / dt;  // Calculate the derivative term
+  integral += Ki * error * dt_time;  // Calculate the integral term
+  double derivative = Kd * (error - prevError) / dt_time;  // Calculate the derivative term
   double output = proportional + integral + derivative;  // Calculate the output
   
   // Limit the output to the minimum and maximum values
@@ -146,9 +147,10 @@ void setup() {
   // take time stamp
   lastMillis = millis();
   lastMicros = micros();
-  
+  delay(1);
   // calculate gyro offset
   gyroOffset(); // recalibration of gyro.
+  delay(1);
   
 }
 
@@ -156,14 +158,15 @@ void setup() {
 void loop() {
   // get desired position if available
   if (Serial.available() > 0) {
-    String inputString = Serial.readStringUntil(', ');
-    double desiredPosX = (float)inputString.toFloat(); // r(t)
+    String inputString = Serial.readStringUntil(',');
+    desiredPosX = float(inputString.toFloat()); // r(t)
     
     inputString = Serial.readStringUntil('\n');
-    double desiredPosY = (float)inputString.toFloat(); // r(t)
+    desiredPosY = float(inputString.toFloat()); // r(t)
   }
 
-    
+   
+   
 
   if (millis() - lastMillis >= SAMPLERATE){
     lastMillis = millis();
@@ -180,42 +183,37 @@ void loop() {
 
 
 
-
+    odometry();
+    gyroIntegration();
+    
     // calculate the error between <Wheel RadS = LeftMotorSpeed> and the output from P2P_CTRL = <LeftMotorSpeed_Cntrl_CMD>
-    double errorLeft = LeftMotorSpeed_Cntrl_CMD - LeftMotorSpeed;
+    double errorLeft = LeftMotorSpeed_Cntrl_CMD - leftWheelSpeed;
 
     // calculate the error between <Wheel RadS = RightMotorSpeed> and the output from P2P_CTRL = <RightMotorSpeed_Cntrl_CMD>
-    double errorRight = RightMotorSpeed_Cntrl_CMD - RightMotorSpeed;
+    double errorRight = RightMotorSpeed_Cntrl_CMD - rightWheelSpeed;
     
     // insert error to pidController, insert the controll signal to the motors.
-    double cEr_left = pidController(errorLeft, dt_time, prevErrorLeft, integralLeft);
+    cEr_left = pidControllerLeft(errorLeft, prevErrorLeft, integralLeft);
 
-    double cEr_right = pidController(errorRight, dt_time, prevErrorRight, integralRight); 
+    cEr_right = pidControllerRight(errorRight, prevErrorRight, integralRight); 
     
 
     motors.setLeftSpeed(cEr_left);
     motors.setRightSpeed(cEr_right);
 
 
-    // insert <Wheel RadS> to Encoder position estimation - this is odometry
-    gyroIntegration();
-    odometry();
+  
 
 
     prevErrorLeft = errorLeft;
     prevErrorRight = errorRight;
 
-
-  }
-  
-    Serial.print("Control1 = ");
-    Serial.print(controlsignal_1);
-    Serial.print(" Control2 = ");
-    Serial.print(controlsignal_2);
-    Serial.print("Control3 = ");
-    Serial.print(controlsignal_3);
-    Serial.print(" Control4 = ");
-    Serial.print(controlsignal_4);
+    Serial.print(" cEr_right = ");
+    Serial.print(cEr_right);
+    Serial.print(" cEr_left = ");
+    Serial.print(cEr_left);
+    
+    
     
     Serial.print(" Pos = (");
     Serial.print(posx);
@@ -229,13 +227,16 @@ void loop() {
     
     Serial.print(desiredPosY);
     Serial.println(")");
+  }
+  
+
     
 
 
 
 
 
-    motorsState = (controlsignal_1 || controlsignal_2) ==  0 ? 0 : 1; //  check if motors are still, for gyro
+    motorsState = (cEr_left || cEr_right) ==  0 ? 0 : 1; //  check if motors are still, for gyro
 
 }
 
@@ -266,15 +267,26 @@ void gyroOffset(){
 
 
 
-void odometry(double &leftMotorSpeed, double &rightMotorSpeed, double dt){
+void odometry(){
     //encoder read
     int16_t countsLeft = encoders.getCountsAndResetLeft();
     int16_t countsRight = encoders.getCountsAndResetRight();
     
+    
+    
     float dx_1 = countsRight*encoder2dist;
     float dx_2 = countsLeft*encoder2dist;
+    
     float d_theta = float(dx_1-dx_2)/WHEELS_DISTANCE;
     posx += cos(theta+d_theta/2)*(dx_1+dx_2)/2;
     posy += sin(theta+d_theta/2)*(dx_1+dx_2)/2;
     theta += d_theta;
+
+    leftWheelSpeed = dx_2 / dt_time;
+    rightWheelSpeed = dx_1 / dt_time;
+    Serial.print("Speed left, right = ");
+    Serial.print(leftWheelSpeed);
+    Serial.print(" ");
+    Serial.print(rightWheelSpeed);
+    
 }
