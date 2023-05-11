@@ -52,7 +52,7 @@ float LowPassFilter(float currentReading, float previousReading, float alpha) {
 
 
 double pidControllerLeft(double error, double prevError, double &integral) {
-  double Kp = 10.0, Ki = 5.0 , Kd = 0.0, outMin = 0.0 , outMax = 250.0;
+  double Kp = 10.0, Ki = 0.70 , Kd = 0.0, outMin = -200.0 , outMax = 250.0;
 
 
   double proportional = Kp * error;  // Calculate the proportional term
@@ -71,7 +71,7 @@ double pidControllerLeft(double error, double prevError, double &integral) {
 }
 
 double pidControllerRight(double error, double prevError, double &integral) {
-  double Kp = 10.0, Ki = 5.0 , Kd = 0.0, outMin = 0.0 , outMax = 250.0;
+  double Kp = 10.0, Ki = 0.7 , Kd = 0.0, outMin = -200.0 , outMax = 250.0;
 
 
   double proportional = Kp * error;  // Calculate the proportional term
@@ -163,10 +163,12 @@ void loop() {
     
     inputString = Serial.readStringUntil('\n');
     desiredPosY = float(inputString.toFloat()); // r(t)
+ 
   }
 
    
-   
+   desiredPosX = 500;
+   desiredPosY = 0;
 
   if (millis() - lastMillis >= SAMPLERATE){
     lastMillis = millis();
@@ -181,8 +183,11 @@ void loop() {
     // gets desired posx posy, curren pos x pos y, theta  (globals), edits LeftMotorSpeed_Cntrl_CMD and RightMotorSpeed_Cntrl_CMD.
     P2P_CTRL(desiredPosX, desiredPosY, LeftMotorSpeed_Cntrl_CMD, RightMotorSpeed_Cntrl_CMD);
 
-
-
+    Serial.print("P2PCTRL = ");
+    Serial.print(LeftMotorSpeed_Cntrl_CMD);
+    Serial.print(", ");
+    Serial.print(RightMotorSpeed_Cntrl_CMD);
+    Serial.print(", ");
     odometry();
     gyroIntegration();
     
@@ -282,8 +287,16 @@ void odometry(){
     posy += sin(theta+d_theta/2)*(dx_1+dx_2)/2;
     theta += d_theta;
 
-    leftWheelSpeed = dx_2 / dt_time;
-    rightWheelSpeed = dx_1 / dt_time;
+    leftWheelSpeed = (dx_2 / dt_time) / ( WHEEL_DIAMETER * 60 );
+    
+    rightWheelSpeed = (dx_1 / dt_time) / (WHEEL_DIAMETER * 60) ;
+    
+   
+
+
+
+    
+    
     Serial.print("Speed left, right = ");
     Serial.print(leftWheelSpeed);
     Serial.print(" ");
