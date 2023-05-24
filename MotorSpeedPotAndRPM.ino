@@ -4,11 +4,14 @@
 #define GEAR_RATIO 30
 
 // encoder variables
-int M0_PWM = 5;     // Set up the M0_PWM pin
-int M0_PHASE = 6;   // Set up the M0_PHASE pin
+int M0_PWM = 5;     // Set up the M0_PWM pin IN2
+int IN1 = 6;
+int IN2 = 5;
+int M0_PHASE = 6;   // Set up the M0_PHASE pin IN1
 int potPin = 0;     // Set up the potentiometer pin
 int potVal;         // Declare a variable to hold the potentiometer value
 int motorSpeed;     // Declare a variable to hold the motor speed
+int motorPin;
 
 // encoder variables
 volatile int encoderCounts = 0;
@@ -56,7 +59,7 @@ void loop() {
   Serial.print(", ");
   Serial.print(currPosition);
   Serial.print(", ");
-  Serial.println(velocity);
+  Serial.print(velocity);
 
   // Update previous values
   prevTime = currTime;
@@ -70,20 +73,30 @@ void loop() {
   // Map the potentiometer value to a motor speed value between 0 and 255
 
   // Decide the motor spin direction based on the potentiometer value
+
   if (potVal < 500) {
     // Spin the motor in one direction
-    digitalWrite(M0_PHASE, LOW);
-    motorSpeed = map(potVal, 0, 499, 255, 0);
+    motorSpeed = map(potVal, 0, 499, 0, 255);
+        // IN2 = 1 IN1 = reversed PWM
+    digitalWrite(IN2, HIGH);
+    analogWrite(IN1, motorSpeed);
+
+   
+
     digitalWrite(11, HIGH);
     digitalWrite(10, LOW);
     digitalWrite(9, LOW);
 
-
   } 
   else if (potVal > 524) {
-    // Spin the motor in the other direction
-    digitalWrite(M0_PHASE, HIGH);
+
     motorSpeed = map(potVal, 525, 1023, 255, 0);
+    
+     // IN1 = 1 IN2 = PWM
+    digitalWrite(IN1, HIGH);
+    analogWrite(IN2, motorSpeed);
+
+
     digitalWrite(9, HIGH);
     digitalWrite(10, LOW);
     digitalWrite(11, LOW);
@@ -95,10 +108,11 @@ void loop() {
     digitalWrite(11, LOW);
 
   }
+  Serial.print(", ");
+  Serial.println(potVal);
   
   delay(10);
   // Set the motor speed based on the potentiometer value
-  analogWrite(M0_PWM, motorSpeed);
 }
 
 // EncoderA ISR
