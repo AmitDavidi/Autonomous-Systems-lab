@@ -4,10 +4,8 @@
 #define GEAR_RATIO 30
 
 // encoder variables
-int M0_PWM = 5;     // Set up the M0_PWM pin IN2
 int IN1 = 6;
 int IN2 = 5;
-int M0_PHASE = 6;   // Set up the M0_PHASE pin IN1
 int potPin = 0;     // Set up the potentiometer pin
 int potVal;         // Declare a variable to hold the potentiometer value
 int motorSpeed;     // Declare a variable to hold the motor speed
@@ -26,9 +24,12 @@ void setup() {
 
   Serial.begin(115200);
 
-  pinMode(M0_PWM, OUTPUT);     // Set M0_PWM as an output pin
-  pinMode(M0_PHASE, OUTPUT);   // Set M0_PHASE as an output pin
-  digitalWrite(M0_PHASE, HIGH); // Set M0_PHASE to LOW to drive the motor in one direction
+  pinMode(IN1, OUTPUT);     // Set IN1 as an output pin
+  pinMode(IN2, OUTPUT);   // Set IN2 as an output pin
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+
+  
   pinMode(9, OUTPUT);
   pinMode(10, OUTPUT);
   pinMode(11, OUTPUT);
@@ -55,10 +56,7 @@ void loop() {
   float velocity = (deltaPosition / deltaTime) * 60.0;
 
   // Print values
-  Serial.print(currTime / 1000.0);
-  Serial.print(", ");
-  Serial.print(currPosition);
-  Serial.print(", ");
+  Serial.print(",   RPM: ");
   Serial.print(velocity);
 
   // Update previous values
@@ -73,29 +71,16 @@ void loop() {
   // Map the potentiometer value to a motor speed value between 0 and 255
 
   // Decide the motor spin direction based on the potentiometer value
+  motorSpeed = map(potVal, 0, 1023, 0, 255);
 
   if (potVal < 500) {
     // Spin the motor in one direction
-    motorSpeed = map(potVal, 0, 499, 0, 255);
-        // IN2 = 1 IN1 = reversed PWM
-    digitalWrite(IN2, HIGH);
-    analogWrite(IN1, motorSpeed);
-
-   
-
     digitalWrite(11, HIGH);
     digitalWrite(10, LOW);
     digitalWrite(9, LOW);
 
   } 
   else if (potVal > 524) {
-
-    motorSpeed = map(potVal, 525, 1023, 255, 0);
-    
-     // IN1 = 1 IN2 = PWM
-    digitalWrite(IN1, HIGH);
-    analogWrite(IN2, motorSpeed);
-
 
     digitalWrite(9, HIGH);
     digitalWrite(10, LOW);
@@ -108,7 +93,11 @@ void loop() {
     digitalWrite(11, LOW);
 
   }
-  Serial.print(", ");
+
+  analogWrite(IN2,  255 - motorSpeed);
+  analogWrite(IN1,   motorSpeed);
+
+  Serial.print(",   potVal: ");
   Serial.println(potVal);
   
   delay(10);
