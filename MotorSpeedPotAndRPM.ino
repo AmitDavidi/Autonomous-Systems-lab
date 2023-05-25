@@ -94,7 +94,7 @@ void loop() {
 
   }
 
-  analogWrite(IN2,  255 - motorSpeed);
+  analogWrite(IN2,  255 - motorSpeed); // reversed so that Pot Right -> wheel spins right
   analogWrite(IN1,   motorSpeed);
 
   Serial.print(",   potVal: ");
