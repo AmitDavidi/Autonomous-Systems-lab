@@ -50,7 +50,7 @@ void encoderB() {
 }  // End EncoderB ISR
 
 double pidController(double error, double prevError) {
-  double Kp = 10.0, Ki = 1.5 , Kd = 2.0, dt = 0.01, outMin = -127.5 , outMax = 127.5;
+  double Kp = 75.0, Ki = 1.25 , Kd = 20.0, dt = 0.01, outMin = -127.5 , outMax = 127.5;
 
   integral += Ki * error * dt;  
   double proportional = Kp * error;  
@@ -64,7 +64,7 @@ double pidController(double error, double prevError) {
     output = outMin;
   }
   
-  return output; 
+  return output;  // Return the output
 }
 
 
@@ -118,26 +118,14 @@ void loop() {
   analogWrite(IN2, 127.5 + control_signal);
   analogWrite(IN1, 127.5 - control_signal);
 
+  Serial.print(desired_wheel_position);
+  Serial.print(", ");
+  Serial.println(currPosition);
 
   // Update previous values
   prevTime = currTime;
   prevPosition = currPosition;
   prev_error = error;
-
-  static unsigned long last_update_time = 0;
-  unsigned long current_time = millis();
-  if (current_time - last_update_time >= UPDATE_INTERVAL_MS) {
-
-    last_update_time = current_time;
-    
-    StaticJsonDocument<64> doc;
-    doc["sensor2"] = currPosition;
-
-    serializeJson(doc, Serial);
-    Serial.println();
-  }
-
-
 
 
   delay(10);
