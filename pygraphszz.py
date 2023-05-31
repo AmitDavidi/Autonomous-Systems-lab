@@ -110,7 +110,7 @@ class SensorDataPlot:
 
         self.ax.set_xlim(0, self.sensor_data.maxlen)
 
-        self.ax.set_ylim(0, 1023)
+        self.ax.set_ylim(0, 2000)
 
         self.ax.set_title('Sensor Data')
 

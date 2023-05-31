@@ -56,7 +56,7 @@ double PIController() {
   double Ki = 8.0;
   double dt = 0.01;
   double outMax = 255.0;
-  double outMin = -255.0;
+  double outMin = 0.0;
   static double integral = 0.0;
   double proportional = Kp * error;     // Calculate the proportional term
   integral += double(Ki * error * dt);  // Calculate the integral term

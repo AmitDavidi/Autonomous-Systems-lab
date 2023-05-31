@@ -29,7 +29,6 @@ void loop() {
     digitalWrite(10, LOW);
     digitalWrite(9, LOW);
 
-
   } 
   else if (potVal > 524) {
     // Spin the motor in the other direction

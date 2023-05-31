@@ -101,7 +101,6 @@ void loop() {
   Serial.println(potVal);
   
   delay(10);
-  // Set the motor speed based on the potentiometer value
 }
 
 // EncoderA ISR

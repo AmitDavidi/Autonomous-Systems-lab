@@ -1,6 +1,3 @@
-#include <ArduinoJson.h>
-const int UPDATE_INTERVAL_MS = 10;
-
 #define ENCODER_PINA 2
 #define ENCODER_PINB 3
 #define COUNTS_PER_REVOLUTION 12
@@ -50,7 +47,7 @@ void encoderB() {
 }  // End EncoderB ISR
 
 double pidController(double error, double prevError) {
-  double Kp = 10.0, Ki = 1.5 , Kd = 2.0, dt = 0.01, outMin = -127.5 , outMax = 127.5;
+  double Kp = 200.0, Ki = 100.3 , Kd = 10.2, dt = 0.01, outMin = -255.0 , outMax = 255.0;
 
   integral += Ki * error * dt;  
   double proportional = Kp * error;  
@@ -64,7 +61,7 @@ double pidController(double error, double prevError) {
     output = outMin;
   }
   
-  return output; 
+  return output;  // Return the output
 }
 
 
@@ -101,6 +98,7 @@ void loop() {
     String inputString = Serial.readStringUntil('\n');
     desired_wheel_position = inputString.toInt(); // r(t)
   }
+
   // ------ Plot wheel position ------
   // Calculate time difference
   unsigned long currTime = millis();
@@ -111,34 +109,40 @@ void loop() {
   float deltaPosition = currPosition - prevPosition;
 
   // Calculate velocity
+  //float velocity = (deltaPosition / deltaTime) * 60.0;
   float error = desired_wheel_position - currPosition;
 
+
   float control_signal = pidController(error, prev_error);
-
-  analogWrite(IN2, 127.5 + control_signal);
-  analogWrite(IN1, 127.5 - control_signal);
-
-
-  // Update previous values
-  prevTime = currTime;
-  prevPosition = currPosition;
-  prev_error = error;
-
-  static unsigned long last_update_time = 0;
-  unsigned long current_time = millis();
-  if (current_time - last_update_time >= UPDATE_INTERVAL_MS) {
-
-    last_update_time = current_time;
-    
-    StaticJsonDocument<64> doc;
-    doc["sensor2"] = currPosition;
-
-    serializeJson(doc, Serial);
-    Serial.println();
+  if(abs(error) > 0.05){
+    analogWrite(IN2, map(control_signal, -255.0, 255.0, 0.0, 255));
+    analogWrite(IN1,   map(control_signal, -255.0, 255.0, 255, 0));
   }
 
 
 
+  Serial.print("error: ");
+  Serial.print(error);
+  Serial.print(", ");
+  // --- Print values ---
+  Serial.print("IN1 = ");
+   
+  Serial.print(map(control_signal, -255.0, 255.0, 0, 255));
+  Serial.print(", IN2 = ");
+
+  Serial.print(map(control_signal, -255.0, 255.0, 255, 0.0));
+  Serial.print(", ");
+
+  Serial.print(currPosition);
+  Serial.print(", ");
+
+  Serial.println(desired_wheel_position);
+  Serial.print(",");
+    
+  // Update previous values
+  prevTime = currTime;
+  prevPosition = currPosition;
+  prev_error = error;
 
   delay(10);
 
