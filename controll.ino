@@ -70,9 +70,10 @@ double pidControllerLeft(double error, double prevError, double &integral) {
   return output;  // Return the output
 }
 
+// Kp = 0.01 , KI = 0.02 in the sim
 double pidControllerRight(double error, double prevError, double &integral) {
   double Kp = 10.0, Ki = 0.7 , Kd = 0.0, outMin = -200.0 , outMax = 250.0;
-
+  
 
   double proportional = Kp * error;  // Calculate the proportional term
   integral += Ki * error * dt_time;  // Calculate the integral term
