@@ -287,9 +287,10 @@ void odometry(){
     posy += sin(theta+d_theta/2)*(dx_1+dx_2)/2;
     theta += d_theta;
 
-    leftWheelSpeed = (dx_2 / dt_time) / ( WHEEL_DIAMETER * 60 );
+    float WheelRadius = WHEEL_DIAMETER/2/1000; 
+    leftWheelSpeed = (dx_2 / dt_time) / ( WheelRadius*2*PI ); // need to be wheel rotations / sec
     
-    rightWheelSpeed = (dx_1 / dt_time) / (WHEEL_DIAMETER * 60) ;
+    rightWheelSpeed = (dx_1 / dt_time) / WheelRadius*2*PI) ;
     
    
 
