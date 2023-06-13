@@ -16,7 +16,7 @@ float dt_time = SAMPLERATE/1000.0;
 // Odometry settings
 #define GEAR_RATIO 51.45      // Motor gear ratio 100.37
 #define WHEELS_DISTANCE 98    // Distance between tracks in mm
-#define WHEEL_DIAMETER 38.5   // Wheels diameter measured 38.5
+#define WHEEL_DIAMETER 37.5   // Wheels diameter measured 38.5
 #define ENCODER_PPR 12        // Encoder pulses per revolution
 #define GYRO_SCALE 0.07        // 70 mdps/LSB 
 
@@ -32,6 +32,9 @@ int32_t gyroOffset_z = -16;
 float gyroz=0;
 boolean motorsState = 0;
 
+float pointsX[9] = {0, 0.5, 1, 1  ,  1,  0.5, 0,   0  ,  0};
+float pointsY[9] = {0, 0 ,  0, 0.5,  1 , 1,   1,   0.5,  0};
+int pointIdx = 0;
 
 // controll variables:
 float LeftMotorSpeed_Cntrl_CMD = 0.0, prevLeftMotorSpeed = 0.0;
@@ -47,7 +50,7 @@ float error_left = 0.0, error_right = 0.0;
 
 
 float pidController(float error, float prevError, float &integral) {
-  float Kp = 1500.0, Ki = 500.0 , Kd = 0.0, outMin = -400.0 , outMax = 400.0;
+  float Kp = 1000.0, Ki = 100.0 , Kd = 0.0, outMin = -400.0 , outMax = 400.0;
 
   float proportional = Kp * error;  // Calculate the proportional term
   integral += Ki * error * dt_time;  // Calculate the integral term
@@ -84,7 +87,7 @@ void P2P_CTRL(float X_Desired, float Y_Desired, float &Left_Motor, float &Right_
 
     // set limits on max speed command
 //    float WheelRadius = WHEEL_DIAMETER/2/1000;  // [m]
-    float w_Max = 0.2;  // max speed [m/s]
+    float w_Max = 0.3;  // max speed [m/s]
     
 
     if (w_forward > w_Max) {
@@ -93,12 +96,8 @@ void P2P_CTRL(float X_Desired, float Y_Desired, float &Left_Motor, float &Right_
     
     w_last = w_forward;
 
-    Left_Motor = w_forward + theta_t*(WHEEL_DIAMETER*3.14)/(2*3.14 * 1000);
-    Right_Motor = w_forward - theta_t*(WHEEL_DIAMETER*3.14)/(2*3.14 * 1000);
-
-    Serial.print("  Theta_t = ");
-    Serial.print(theta_t);
-
+    Left_Motor = w_forward + theta_t*0.01;
+    Right_Motor = w_forward - theta_t*0.01;
 
 
 }
@@ -136,27 +135,32 @@ void setup() {
 
 // the loop function runs over and over again foreverdoub
 void loop() {
-  // get desired position if available
-  if (Serial.available() > 0) {
-    String inputString = Serial.readStringUntil(',');
-    desiredPosX = float(inputString.toFloat()); // r(t)
-    
-    inputString = Serial.readStringUntil('\n');
-    desiredPosY = float(inputString.toFloat()); // r(t)
- 
-  }
-
-  desiredPosX = 1.0;
-  desiredPosY = 0.0;
+  
+  
 
   if (millis() - lastMillis >= SAMPLERATE){
+//    
+//    if(abs(posx - desiredPosX) < 0.1 && abs(posy - desiredPosY) < 0.1) {
+//      pointIdx++;
+//    }
+    
+    desiredPosX = 0.5;
+    desiredPosY = 0.5;
+    
+    
+    Serial.print(" desired = ");
+    Serial.print(desiredPosX);
+    Serial.print(", ");
+    Serial.print(desiredPosY);
+    
     lastMillis = millis();
 
     // calculate dt sample
     unsigned long dtMicros = micros()-lastMicros;
     lastMicros = micros();
     dt_time = float(dtMicros)/1000000.0;
-
+    
+   
    
     
     P2P_CTRL(desiredPosX, desiredPosY, LeftMotorSpeed_Cntrl_CMD, RightMotorSpeed_Cntrl_CMD);
@@ -165,12 +169,7 @@ void loop() {
 //    LeftMotorSpeed_Cntrl_CMD = desired_vel ;
 //    RightMotorSpeed_Cntrl_CMD = desired_vel ;
 
-    
-    Serial.print("  P2P output: ");
-    Serial.print(LeftMotorSpeed_Cntrl_CMD);
-    Serial.print(", ");
-    Serial.print(RightMotorSpeed_Cntrl_CMD);
-    Serial.print(" ");
+ 
     odometry();
     
 //    gyroIntegration();
@@ -194,27 +193,14 @@ void loop() {
     prevErrorLeft = errorLeft;
     prevErrorRight = errorRight;
 
-    Serial.print(" cEr_right = ");
-    Serial.print(cEr_right);
-    Serial.print(" cEr_left = ");
-    Serial.print(cEr_left);
-//    
-    
-//    
+
     Serial.print(" Pos = (");
     Serial.print(posx);
     Serial.print(", ");
     Serial.print(posy);
     Serial.print(") theta= ");
-    Serial.print(theta);
+    Serial.println(theta);
     
-//    
-//    Serial.print(" Desired pos = (");
-//    Serial.print(desiredPosX);
-//    Serial.print(", ");
-//    
-//    Serial.print(desiredPosY);
-//    Serial.print(")");
   }
   
 
@@ -259,7 +245,7 @@ void odometry(){
     float dx_1 = countsRight*encoder2dist; // [m]
     float dx_2 = countsLeft*encoder2dist; // [m]
     
-    float d_theta = float(dx_1-dx_2)/(WHEELS_DISTANCE/1000.0);
+    float d_theta = float(dx_1-dx_2)/(WHEELS_DISTANCE / 1000.0);
     posx += cos(theta+d_theta/2)*(dx_1+dx_2)/2;
     posy += sin(theta+d_theta/2)*(dx_1+dx_2)/2;
     theta += d_theta;
@@ -271,10 +257,5 @@ void odometry(){
   
 
     
-    
-    Serial.print("Speed: ");
-    Serial.print(leftWheelSpeed);
-    Serial.print(", ");
-    Serial.println(rightWheelSpeed);
     
 }
