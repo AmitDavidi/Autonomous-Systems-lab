@@ -77,7 +77,7 @@ void P2P_CTRL(float X_Desired, float Y_Desired, float &Left_Motor, float &Right_
     if ((dir == 0) && (dotVector == -1)) {  // vectors align in reverse... singularity
         theta_t = 3.14/2.0;
     } else {
-        theta_t = acos(dotVector) * dir / 1000;
+        theta_t = acos(dotVector) * dir;
     }
 
     float w_forward = sqrt(pow(Vt[0],2) + pow(Vt[1],2));
@@ -93,8 +93,8 @@ void P2P_CTRL(float X_Desired, float Y_Desired, float &Left_Motor, float &Right_
     
     w_last = w_forward;
 
-    Left_Motor = w_forward + theta_t*2;
-    Right_Motor = w_forward - theta_t*2;
+    Left_Motor = w_forward + theta_t/(2 * 1000);
+    Right_Motor = w_forward - theta_t/(2 * 1000);
 
     Serial.print("  Theta_t = ");
     Serial.print(theta_t);
