@@ -93,8 +93,8 @@ void P2P_CTRL(float X_Desired, float Y_Desired, float &Left_Motor, float &Right_
     
     w_last = w_forward;
 
-    Left_Motor = w_forward + theta_t/(2 * 1000);
-    Right_Motor = w_forward - theta_t/(2 * 1000);
+    Left_Motor = w_forward + theta_t*(WHEEL_DIAMETER*3.14)/(2*3.14 * 1000);
+    Right_Motor = w_forward - theta_t*(WHEEL_DIAMETER*3.14)/(2*3.14 * 1000);
 
     Serial.print("  Theta_t = ");
     Serial.print(theta_t);
