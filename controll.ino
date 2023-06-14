@@ -44,8 +44,11 @@ float gyroz=0;
 boolean motorsState = 0;
 
 
-float pointsX[40] = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-float pointsY[40] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1};
+
+
+
+float pointsX[40] = {0.0, 0.05, 0.1, 0.15000000000000002, 0.2, 0.25, 0.30000000000000004, 0.35000000000000003, 0.4, 0.45, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.45, 0.4, 0.35000000000000003, 0.30000000000000004, 0.25, 0.2, 0.15000000000000002, 0.1, 0.05, 0.0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+float pointsY[40] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.05, 0.1, 0.15000000000000002, 0.2, 0.25, 0.30000000000000004, 0.35000000000000003, 0.4, 0.45, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.45, 0.4, 0.35000000000000003, 0.30000000000000004, 0.25, 0.2, 0.15000000000000002, 0.1, 0.05};
 
 int pointIdx = 0;
 float posx = 0.0;
@@ -54,6 +57,7 @@ float posy = 0.0;
 // controll variables:
 float LeftMotorSpeed_Cntrl_CMD = 0.0, prevLeftMotorSpeed = 0.0;
 float  leftWheelSpeed = 0.0, rightWheelSpeed = 0.0;
+float lastrightWheelSpeed = 0.0, lastleftWheelSpeed = 0.0;
 float RightMotorSpeed_Cntrl_CMD = 0.0, prevRightMotorSpeed = 0.0;
 float desiredPosY = 0.0, desiredPosX = 0.0;
 
@@ -64,8 +68,8 @@ float w_last = 0.0;
 float error_left = 0.0, error_right = 0.0;
 int switched = 0;
 
-float pidController(float error, float prevError, float &integral) {
-  float Kp = 2000.0, Ki = 500.0 , Kd = 0.0, outMin = -400.0 , outMax = 400.0;
+float pidController(float error, float prevError, float &integral, float Kp) {
+  float Ki = 500.0 , Kd = 0.0, outMin = -400.0 , outMax = 400.0;
 
   float proportional = Kp * error;  // Calculate the proportional term
   integral += Ki * error * dt_time;  // Calculate the integral term
@@ -104,23 +108,34 @@ void P2P_CTRL(float X_Desired, float Y_Desired, float &Left_Motor, float &Right_
     
     // set limits on max speed command
 //    float WheelRadius = WHEEL_DIAMETER/2/1000;  // [m]
-    float w_Max = 0.7;  // max speed [m/s]
+    float w_Max = 0.4;  // max speed [m/s]
     
 
     if (w_forward > w_Max) {
         w_forward = float(w_Max);
     }
-    
+
+    if(w_forward - w_last > 0.1) {
+      w_forward = w_last + 0.1;
+    }
     w_last = w_forward;
 
-    Left_Motor = float(w_forward - theta_t*0.05);
-    Right_Motor = float(w_forward + theta_t*0.05);
+    Left_Motor = (float(w_forward - theta_t*0.25));
+    Right_Motor = float(w_forward + theta_t*0.25);
     
     if(Left_Motor != Left_Motor) Left_Motor = 0.02;
     if(Right_Motor != Right_Motor) Right_Motor = 0.02;
       
 
 
+}
+// low pass filtering function
+double LowPassFilter(double currentReading, double previousReading, double alpha) {
+  if(abs(currentReading - previousReading) > 60000) {
+    currentReading = previousReading; // bad ENCODER_COUNTS read, integer overflow, skip this reading.
+  }
+  double filteredReading = double(alpha * currentReading + (1.0 - alpha) * previousReading);
+  return filteredReading;
 }
 
 
@@ -155,7 +170,9 @@ void setup() {
   
 }
 
-// the loop function runs over and over again foreverdoub
+
+
+// the loop function runs over and over again foreverSdoub
 void loop() {
   
   
@@ -175,10 +192,11 @@ void loop() {
 
     
     
-    Serial.print(" desired = ");
+    Serial.print(" desired = (");
     Serial.print(desiredPosX);
     Serial.print(", ");
     Serial.print(desiredPosY);
+    Serial.print(")");
     
     lastMillis = millis();
 
@@ -209,19 +227,24 @@ void loop() {
 
     
     // insert error to pidController, insert the controll signal to the motors.
-    cEr_left = pidController(errorLeft, prevErrorLeft, integralLeft);
+    cEr_left = pidController(errorLeft, prevErrorLeft, integralLeft, 1500);
 
-    cEr_right = pidController(errorRight, prevErrorRight, integralRight); 
+    cEr_right = pidController(errorRight, prevErrorRight, integralRight, 1500); 
     
  
 
-    motors.setLeftSpeed(cEr_left); // -400 --> 400
+    motors.setLeftSpeed(cEr_left*0.9); // -400 --> 400
     motors.setRightSpeed(cEr_right);
 
-
+  
     prevErrorLeft = errorLeft;
     prevErrorRight = errorRight;
 
+    Serial.print(" cmd = (");
+    Serial.print(cEr_left);
+    Serial.print(", ");
+    Serial.print(cEr_right);
+    Serial.print(")");
     
     Serial.print(" Pos = (");
     Serial.print(posx);
@@ -283,8 +306,12 @@ void odometry(){
 
     leftWheelSpeed = float(dx_2 / dt_time); 
     rightWheelSpeed = float(dx_1 / dt_time); 
-  
 
+    leftWheelSpeed = LowPassFilter(leftWheelSpeed, lastleftWheelSpeed, 0.5);
+    rightWheelSpeed = LowPassFilter(rightWheelSpeed, lastrightWheelSpeed, 0.5);
+
+    lastrightWheelSpeed = rightWheelSpeed;
+    lastleftWheelSpeed = leftWheelSpeed;
     
     
 }
