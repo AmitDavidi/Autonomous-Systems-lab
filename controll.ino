@@ -149,7 +149,7 @@ double LowPassFilter(double currentReading, double previousReading, double alpha
 
 // the setup function runs once when you press reset or power the board
 void setup() {
-
+  delay(2000);
   // init imu
   Wire.begin();
   imu.init();
@@ -179,6 +179,7 @@ void setup() {
   theta = atan2(pointsY[1] - pointsY[0], pointsX[1] - pointsX[0]); // calc initial angle
   posx = pointsX[0];
   posy = pointsY[0];
+  
   
   
   
@@ -212,11 +213,11 @@ void loop() {
       }
       
     }
-    if(pointIdx == NUM_POINTS) {
+    if(pointIdx >= NUM_POINTS) {
       
-      
-      motors.setLeftSpeed(cEr_left); // -400 --> 400
-      motors.setRightSpeed(cEr_right);
+      motors.setLeftSpeed(0); // -400 --> 400
+      motors.setRightSpeed(0);
+      delay(100000);
     }
     
     lastMillis = millis();
@@ -331,7 +332,7 @@ void odometry(){
     posx += cos(theta+d_theta/2)*(dx_1+dx_2)/2;
     posy += sin(theta+d_theta/2)*(dx_1+dx_2)/2;
     
-    theta += d_theta*0.665*0.9; // band-aid
+    theta += d_theta*0.665*0.885; // band-aid
    
 
 
