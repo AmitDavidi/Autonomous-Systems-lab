@@ -256,7 +256,12 @@ void loop() {
     motors.setRightSpeed(cEr_right);
 
         
-   
+    Serial.print("P2P = (");
+    Serial.print(LeftMotorSpeed_Cntrl_CMD);
+    Serial.print(", ");
+    Serial.print(RightMotorSpeed_Cntrl_CMD);
+    Serial.print(")");
+    
 
     Serial.print(" Speed = (");
     Serial.print(leftWheelSpeed);
