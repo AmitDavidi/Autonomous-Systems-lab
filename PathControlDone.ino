@@ -339,8 +339,8 @@ void odometry(){
     posx += cos(theta+d_theta/2)*(dx_1+dx_2)/2;
     posy += sin(theta+d_theta/2)*(dx_1+dx_2)/2;
     
-//    theta += d_theta*0.665*0.89; // band-aid 0.89 perfect infinity 0.885 perfect circle on 113 robot
-    theta += d_theta*0.665*0.89*1.6; // for square on 115
+    theta += d_theta*0.665*0.89; // band-aid 0.89 perfect infinity 0.885 perfect circle on 113 robot
+    //theta += d_theta*0.665*0.89*1.6; // for square on 115
 
 
 
