@@ -47,3 +47,4 @@ The code includes various constants and variables to control the robot and perfo
 ### Additional Notes
 - The code assumes that the robot will move along the predefined path without any obstacles. It may require additional logic for obstacle avoidance and path planning for real-world applications.
 - The control parameters (Kp, Ki, Kd) of the PID controller can be adjusted to optimize the robot's performance for different paths and robot configurations.
+- Further explanation for Final Task \ other tasks that are in the folder HomeKit solutions, are in the PDFs.
